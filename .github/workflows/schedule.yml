@@ -52,7 +52,7 @@ jobs:
       - name: Fast-forward from personal fork
         if: github.repository == 'BNU-CCR/douyin-hot-hub'
         run: |
-          git remote add personal https://github.com/izukuuuu/douyin-hot-hub.git
+          git remote add personal https://github.com/nateafish/douyin-hot-hub.git
           git fetch personal main
           if git merge-base --is-ancestor personal/main HEAD; then
             echo "Already up to date."
