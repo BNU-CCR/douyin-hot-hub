@@ -1,5 +1,9 @@
 name: scheduled update and sync
 
+# 纯镜像仓库：不再自写抓取器，直接从上游 lonnyzhang423/douyin-hot-hub
+# 拉取数据。因为本仓库是 fork，schedule 在 fork 上不可靠，由
+# nateafish/mirror-driver 每小时 dispatch 本 workflow 触发。
+
 on:
   workflow_dispatch:
   schedule:
@@ -9,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  update:
+  sync:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Shanghai
@@ -20,45 +24,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        if: github.repository == 'nateafish/douyin-hot-hub'
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.8"
-
-      - name: Install dependencies
-        if: github.repository == 'nateafish/douyin-hot-hub'
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: Update hot list
-        if: github.repository == 'nateafish/douyin-hot-hub'
-        run: python main.py
-
-      - name: Commit updates
-        if: github.repository == 'nateafish/douyin-hot-hub'
+      - name: Sync from upstream lonnyzhang423
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-          git commit -m "auto update"
-          git push origin main
-
-      - name: Sync from personal fork
-        if: github.repository == 'BNU-CCR/douyin-hot-hub'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote add personal https://github.com/nateafish/douyin-hot-hub.git
-          git fetch personal main
-          if git merge-base --is-ancestor personal/main HEAD; then
+          git remote add upstream https://github.com/lonnyzhang423/douyin-hot-hub.git
+          git fetch upstream main
+          if git merge-base --is-ancestor upstream/main HEAD; then
             echo "Already up to date."
             exit 0
           fi
-          git merge --no-edit -X theirs personal/main
+          git merge --no-edit -X theirs upstream/main
           git push origin main
